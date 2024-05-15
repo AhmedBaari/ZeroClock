@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Baarify - ZERO</title>
+<style>
+    body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+        margin: 0;
+        background-color: #000000;
+    }
+
+    h1 {
+        font-size: 2.5rem;
+        color: #ffffff;
+        margin-bottom: 1rem;
+    }
+
+    p {
+        font-size: 1.2rem;
+        color: #cbcbcb;
+        margin-bottom: 2rem;
+    }
+
+    audio {
+        margin-top: 2rem;
+    }
+
+    button {
+        padding: 0.5rem 1rem;
+        font-size: 1rem;
+        background-color: #007bff;
+        color: #fff;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+
+    button:hover {
+        background-color: #0056b3;
+    }
+</style>
+</head>
+<body>
+<h1 id="bigday">Baari, it was a big day!</h1>
+<p id="debug-info"></p>
+<audio id="audio-player" preload="metadata">
+    <source src="0000.mp3" type="audio/mpeg">
+    Your browser does not support the audio element.
+</audio>
+  <script>
+ const audio = document.getElementById('audio-player');
+const debugInfo = document.getElementById('debug-info');
+
+// Save audio in cache
+fetch('0000.mp3')
+    .then(response => response.blob())
+    .then(blob => {
+        const url = URL.createObjectURL(blob);
+        audio.src = url;
+    })
+    .catch(error => {
+        console.error('Error fetching audio:', error);
+    });
+
+const targetTimeHours = 23;
+const targetTimeMinutes = 58;
+const targetTimeSeconds = 37;
+const playOffset = 0; // Offset in seconds to play after target time
+
+function getTargetTime() {
+  const today = new Date();
+  today.setHours(targetTimeHours, targetTimeMinutes, targetTimeSeconds, 0);
+  
+  // Check if target time has already passed today
+  if (today < new Date()) {
+    // Add a day to target time if it has passed
+    today.setDate(today.getDate() + 1);
+  }
+  return today.getTime() / 1000;
+}
+
+const targetTime = getTargetTime();
+
+function updateTimeDisplay() {
+  const currentTime = Date.now() / 1000; // Get current time in seconds
+  const remaining = targetTime - currentTime;
+
+  const debugText = `
+    Current Time: ${new Date(currentTime * 1000).toLocaleTimeString()}<br>
+    Starting in: ${remaining > 0 ? formatTime(remaining) : '00:00:00'}<br>
+  `;
+  //Target Time: ${new Date(targetTime * 1000).toLocaleTimeString()}<br>
+
+  if (remaining > 0 ) {
+    debugInfo.innerHTML = debugText;
+  } else {
+    const startTime = targetTime + playOffset;
+    // Play if target time + offset has passed 
+    if (currentTime >= startTime) {
+        const currentHour = new Date(currentTime * 1000).getHours();
+        const currentMinutes = new Date(currentTime * 1000).getMinutes();
+        
+        if (currentHour === 0 && currentMinutes >= 0 && currentMinutes <= 30) {
+            document.body.style.backgroundColor = "blue";
+        } else {
+            document.body.style.backgroundColor = "purple";
+        }
+    
+
+      audio.play().catch(error => {
+        if (error.name === 'DOMException') {
+          // User interaction required, add a play button
+          const playButton = document.createElement('button');
+          playButton.textContent = 'Play';
+          playButton.addEventListener('click', () => audio.play());
+          document.body.appendChild(playButton);
+        } else {
+          console.error('Error playing audio:', error);
+        }
+      });
+
+      // Update audio info even when playing after target time
+
+      // update "bigday" text to current time
+        document.getElementById("bigday").textContent = `${new Date(currentTime * 1000).toLocaleTimeString()}`;
+        debugInfo.innerHTML = ''
+    }
+  }
+}
+
+function formatTime(seconds) {
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  const secondsFormatted = Math.floor(seconds % 60).toString().padStart(2, '0');
+  return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secondsFormatted}`;
+}
+
+// Update time every second
+setInterval(updateTimeDisplay, 1000);
+
+// Play only after metadata loaded to ensure accurate calculations
+audio.addEventListener('loadedmetadata', updateTimeDisplay);
+
+  </script>
+</body>
+</html>
